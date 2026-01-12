@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASL Alphabet Recognizer</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <script async src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-title">
+                    <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3m0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22"/>
+                    </svg>
+                    <h1>ASL Alphabet Recognizer</h1>
+                </div>
+                <p class="header-subtitle">Detect American Sign Language letters using AI-powered hand recognition</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Tabs -->
+            <div class="tabs-container">
+                <div class="tabs-nav">
+                    <button class="tab-btn active" data-tab="upload">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        Upload Image
+                    </button>
+                    <button class="tab-btn" data-tab="webcam">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                        Live Capture
+                    </button>
+                </div>
+
+                <!-- Upload Tab -->
+                <div class="tab-content active" id="upload-tab">
+                    <div class="tab-grid">
+                        <!-- Upload Area -->
+                        <div class="upload-section">
+                            <div class="upload-area" id="uploadArea">
+                                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                <h3>Drop your image here</h3>
+                                <p>or click to browse</p>
+                                <span class="upload-info">Supports JPG, PNG, and other image formats</span>
+                                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                            </div>
+                            <div id="previewContainer" style="display: none;">
+                                <img id="previewImage" alt="Uploaded image">
+                                <button class="clear-btn" id="clearImageBtn">✕</button>
+                            </div>
+                            <button class="recognize-btn" id="recognizeBtn" style="display: none;">Recognize Letter</button>
+                        </div>
+
+                        <!-- Results Area -->
+                        <div class="results-section">
+                            <div id="uploadResultsContainer" style="display: none;">
+                                <div class="prediction-card">
+                                    <p class="prediction-label">Predicted Letter</p>
+                                    <div class="prediction-display">
+                                        <div class="predicted-letter" id="predictedLetter"></div>
+                                        <div class="predicted-confidence" id="predictedConfidence"></div>
+                                    </div>
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" id="confidenceFill"></div>
+                                    </div>
+                                </div>
+
+                                <div class="predictions-list">
+                                    <h3>All Predictions</h3>
+                                    <div id="allPredictions"></div>
+                                </div>
+
+                                <button class="upload-another-btn" id="uploadAnotherBtn">Upload Another Image</button>
+                            </div>
+                            <div id="uploadPlaceholder" class="results-placeholder">
+                                Upload an image to get started
+                            </div>
+                        </div>
+                    </div>
+                </div>
+<!-- Webcam Tab -->
+<div class="tab-content" id="webcam-tab">
+    <div class="webcam-container">
+        <div class="webcam-section">
+            <div class="webcam-feed">
+                <!-- VIDEO & CANVAS -->
+                <video id="webcamVideo" autoplay playsinline></video>
+                <canvas id="webcamCanvas"></canvas>
+            </div>
+
+            <!-- CONTROLS -->
+            <div class="webcam-controls">
+                <button class="control-btn start-btn"
+                        id="startWebcamBtn"
+                        onclick="startWebcam()">
+                    Start Webcam
+                </button>
+
+                <button class="control-btn capture-btn"
+                        id="captureBtn"
+                        onclick="captureFrame()">
+                    Capture
+                </button>
+
+                <button class="control-btn stop-btn"
+                        id="stopWebcamBtn"
+                        onclick="stopWebcam()">
+                    Stop Webcam
+                </button>
+            </div>
+
+            <!-- LIVE RESULT -->
+            <div id="livePrediction" class="live-prediction">
+                <div class="live-label">
+                    Detected: <span id="liveLabel">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Webcam Results -->
+        <div class="webcam-results">
+        <!-- SAME RESULT PANEL USED BY JS -->
+           <div id="result-panel"></div>
+
+        <!-- Placeholder (shown only before prediction) -->
+            <div id="webcamPlaceholder" class="results-placeholder">
+            Start webcam and capture a hand sign to see results
+            </div>
+        </div>
+</div>
+    </div>
+</div>
+
+            <!-- Info Section -->
+            <section class="info-section">
+                <div class="info-card">
+                    <div class="info-icon">📸</div>
+                    <h3>Image Upload</h3>
+                    <p>Upload images of ASL hand signs and get instant predictions with confidence scores.</p>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-icon">🎥</div>
+                    <h3>Live Detection</h3>
+                    <p>Use your webcam for real-time ASL letter detection with live hand tracking.</p>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-icon">✋</div>
+                    <h3>29 Gestures</h3>
+                    <p>Recognize all 26 letters, plus delete, space, and nothing gestures.</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analyzing...</p>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/uploader.js"></script>
+    <script src="/js/prediction.js"></script>
+    <script src="/js/webcam.js"></script>
+    <script src="/js/ui.js"></script>
+</body>
+</html>
